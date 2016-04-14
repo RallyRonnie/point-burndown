@@ -1,5 +1,5 @@
 var ITERATION_ID = 0;
-var DATA = [];
+var DATA = {};
 var DATE_ITR = null;
 var START_DATE = null;
 var END_DATE = null;
@@ -39,22 +39,29 @@ Ext.define('CustomApp', {
 			END_DATE = record.get( 'EndDate' );
 			DATE_ITR = START_DATE;
 			
-			var snapshotStore = Ext.create( 'Rally.data.lookback.SnapshotStore', {
-				fetch: ['PlanEstimate', 'ScheduleState'],
-				autoLoad: true,
-				listeners: {
-					load: this.onWorkItemsLoaded
-				},
-				context: this.getContext().getDataContext(),
-				limit: Infinity,
-				hydrate: ['ScheduleState'],
-				find: {
-					Iteration: ITERATION_ID,
-					__AT: DATE_ITR
-				}
-			});
-			snapshotStore.load();
+			alert( "Iteration ID: " + ITERATION_ID );
+			alert( "Start Date: " + new Date( DATE_ITR ).toISOString() );
+			
+			this.loadWorkItemsForDate( new Date( DATE_ITR ) );
 		}
+	},
+	
+	loadWorkItemsForDate: function( date ) {
+		var snapshotStore = Ext.create( 'Rally.data.lookback.SnapshotStore', {
+			fetch: ['PlanEstimate', 'ScheduleState'],
+			autoLoad: true,
+			listeners: {
+				load: this.onWorkItemsLoaded
+			},
+			context: this.getContext().getDataContext(),
+			limit: Infinity,
+			hydrate: ['ScheduleState'],
+			find: {
+				Iteration: ITERATION_ID,
+				__At: date.toISOString()
+			}
+		});
+		snapshotStore.load();
 	},
 	
 	onWorkItemsLoaded: function( store, records ) {
