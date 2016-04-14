@@ -8,17 +8,17 @@
     <script type="text/javascript">
         Rally.onReady(function () {
                 var ITERATION_ID = 0;
-var DATA = {};
+var DATA = [];
 var DATE_ITR = null;
 var START_DATE = null;
 var END_DATE = null;
+var UNCOMMITTED_SCHEDULE_STATES = [ 'Idea' ];
+var COMPLETED_SCHEDULE_STATES = [ 'Released' ];
 
 Ext.define('CustomApp', {
 	extend: 'Rally.app.App',
 	
 	launch: function() {
-		alert ( "Paused" );
-		
 		var types = Rally.data.ModelFactory.types;
 			
 		Rally.data.ModelFactory.getModel({
@@ -42,16 +42,16 @@ Ext.define('CustomApp', {
 	onIterationLoaded: function( record, operation ) {
 		if( operation.wasSuccessful() ) {
 		
-			alert( "Iteration Model Loaded" );
+			console.log( "Iteration Model Loaded" );
 			ITERATION_ID = record.get( 'ObjectID' );
-			START_DATE = record.get( 'StartDate' );
-			END_DATE = record.get( 'EndDate' );
+			START_DATE = new Date( record.get( 'StartDate' ) );
+			END_DATE = new Date( record.get( 'EndDate' ) );
 			DATE_ITR = START_DATE;
 			
-			alert( "Iteration ID: " + ITERATION_ID );
-			alert( "Start Date: " + new Date( DATE_ITR ).toISOString() );
+			console.log( "Iteration ID: " + ITERATION_ID );
+			console.log( "Start Date: " + new Date( DATE_ITR ).toISOString() );
 			
-			this.loadWorkItemsForDate( new Date( DATE_ITR ) );
+			this.loadWorkItemsForDate( DATE_ITR );
 		}
 	},
 	
@@ -60,7 +60,8 @@ Ext.define('CustomApp', {
 			fetch: ['PlanEstimate', 'ScheduleState'],
 			autoLoad: true,
 			listeners: {
-				load: this.onWorkItemsLoaded
+				load: this.onWorkItemsLoaded,
+				scope: this
 			},
 			context: this.getContext().getDataContext(),
 			limit: Infinity,
@@ -70,12 +71,48 @@ Ext.define('CustomApp', {
 				__At: date.toISOString()
 			}
 		});
-		snapshotStore.load();
 	},
 	
 	onWorkItemsLoaded: function( store, records ) {
-		alert( "Work Items Loaded!" );
-		alert( records.length );
+		console.log( "Work Items Loaded: " + records.length );
+		
+		// If we already have data for this date, skip it
+		for ( var i = 0; i < DATA.length; i ++ ) {
+			if ( DATA[i].date == DATE_ITR ) {
+				return false;
+			}
+		}
+		
+		var date_data = {};
+		date_data.date = new Date( DATE_ITR.valueOf() );
+		
+		var total_scope = 0;
+		var completed_scope = 0;
+					
+		for ( var j = 0; j < records.length; j ++ ) {
+			var record_data = records[j].data;
+			
+			console.log ( record_data.ScheduleState + " - " + record_data.PlanEstimate );
+			
+			if ( !_.contains( UNCOMMITTED_SCHEDULE_STATES, record_data.ScheduleState ) ) {
+				total_scope = total_scope + record_data.PlanEstimate;
+				if ( _.contains( COMPLETED_SCHEDULE_STATES, record_data.ScheduleState ) ) {
+					completed_scope = completed_scope + record_data.PlanEstimate;
+				}
+			}
+		}
+		
+		date_data.total_scope = total_scope;
+		date_data.completed_scope = completed_scope;
+		console.log( "Total = " + total_scope + " & Completed = " + completed_scope );
+		DATA.push( date_data );
+		
+		// Load the next date if we're not done
+		if ( DATE_ITR < END_DATE ) {
+			DATE_ITR.setDate( DATE_ITR.getDate() + 1 );
+			console.log("New Date - " + DATE_ITR );
+			this.loadWorkItemsForDate( DATE_ITR );
+		}
 	}
 		
 	/*	requires: [
@@ -83,7 +120,7 @@ Ext.define('CustomApp', {
 		],
 			
 		launch: function() {
-			alert ( "Paused" );
+			console.log ( "Paused" );
 			this.addChart();//.then({
 			//	success: this.addIdealBurndown,
 		//		scope: this
