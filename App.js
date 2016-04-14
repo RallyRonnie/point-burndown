@@ -1,8 +1,9 @@
 Ext.define('Rally.example.BurnCalculator', {
 	extend: 'Rally.data.lookback.calculator.TimeSeriesCalculator',
-		config: {
-			completedScheduleStateNames: ['Accepted']
-		},
+	/*	config: {
+			completedScheduleStateNames: [ 'Released' ],
+			uncommitedScheduleStateNames: [ 'Idea' ]
+		}, */
 			
 		constructor: function(config) {
 			this.initConfig(config);
@@ -10,48 +11,76 @@ Ext.define('Rally.example.BurnCalculator', {
 		},
 			
 		getDerivedFieldsOnInput: function() {
-			var completedScheduleStateNames = this.getCompletedScheduleStateNames();
+			var completedScheduleStateNames = [ 'Released' ];
+			var uncommitedScheduleStateNames = [ 'Idea' ];
 			return [
 				{
-					"as": "Planned",
-   					"f": function(snapshot) {
-						if (snapshot.PlanEstimate) {
+					"as": "Remaining",
+					"f": function(snapshot) {
+						if (!_.contains(completedScheduleStateNames, snapshot.ScheduleState) && snapshot.PlanEstimate) {
 							return snapshot.PlanEstimate;
 						}
 						return 0;
 					}
 				},
 				{
-					"as": "PlannedCompleted",
+					"as": "Total Scope",
 					"f": function(snapshot) {
-						if (_.contains(completedScheduleStateNames, snapshot.ScheduleState) && snapshot.PlanEstimate) {
+						if (!_.contains(uncommitedScheduleStateNames, snapshot.ScheduleState) && snapshot.PlanEstimate) {
 							return snapshot.PlanEstimate;
 						}
 						return 0;
 					}
+				},
+				{
+					"as": "Guideline",
+					"f": function(snapshot) {
+						var new_date = new Date( snapshot.tick[0] );
+						var old_date = new Date( '2016-03-28' );
+						
+						if ( isNaN( new_date ) || isNaN( old_date ) ) {
+							return 0;
+						}
+			
+						var workdays = 0;
+						var date = old_date;
+						while ( date < new_date ) {
+							if ( date.getDay() !== 0 && date.getDay() != 6 ) {
+								workdays = workdays + 1;
+							}
+							date.setDate( date.getDate() + 1 );
+						}
+						return workdays;
+					}
 				}
 			];
-		},
-			
+		},			
 		getMetrics: function() {
 			return [
 				{
-					"field": "Planned",
-					"as": "Planned",
+					"field": "Remaining",
+					"as": "Remaining",
+					"display": "column",
+					"f": "sum"
+				},
+				{
+					"field": "Total Scope",
+					"as": "Total Scope",
 					"display": "line",
 					"f": "sum"
 				},
 				{
-					"field": "PlannedCompleted",
-					"as": "Completed",
-					"f": "sum",
-					"display": "column"
+					"field": "Guideline",
+					"as": "Guideline",
+					"display": "line",
+					"f": "max"
 				}
 			];
 		}
 	});
 			
-	var PI_OID = 123456789; //The ObjectID of the PI on which to burn
+	// Iteration 7 -- var ITERATION_OID = 51834144714; //The ObjectID of the PI on which to burn
+	var ITERATION_OID = 47998626614; // Iteration 6 
 			
 	Ext.define('CustomApp', {
 		extend: 'Rally.app.App',
@@ -60,28 +89,33 @@ Ext.define('Rally.example.BurnCalculator', {
 		],
 			
 		launch: function() {
+		//	alert ( "Paused" );
 			this.add({
 				xtype: 'rallychart',
 				storeType: 'Rally.data.lookback.SnapshotStore',
 				storeConfig: this._getStoreConfig(),
 				calculatorType: 'Rally.example.BurnCalculator',
 				calculatorConfig: {
-					completedScheduleStateNames: ['Accepted', 'Released']
+					completedScheduleStateNames: ['Released'],
+					startDate: new Date( '2016-03-28' ),
+					endDate: new Date( '2016-04-08' )
 				},
 					chartConfig: this._getChartConfig()
 				});
+			//	var rallychart = this.children[0];
+			//	highchart = rallychart.getChart();
+			//	alert ( rallychart );
 			},
 			
 			/**
-			 * Generate the store config to retrieve all snapshots for all leaf child stories of the specified PI
+			 * Generate the store config to retrieve all snapshots for all children of the specified Iteration
 			 */
 			_getStoreConfig: function() {
 				return {
 					find: {
-						_ItemHierarchy: PI_OID,
-						_TypeHierarchy: 'HierarchicalRequirement',
-						Children: null
+						Iteration: ITERATION_OID
 					},
+					
 					fetch: ['ScheduleState', 'PlanEstimate'],
 					hydrate: ['ScheduleState'],
 					sort: {
@@ -102,12 +136,12 @@ Ext.define('Rally.example.BurnCalculator', {
 						zoomType: 'xy'
 					},
 					title: {
-						text: 'PI Burnup'
+						text: 'Iteration Burndown'
 					},
 					xAxis: {
 						categories: [],
 						tickmarkPlacement: 'on',
-						tickInterval: 5,
+						tickInterval: 1,
 						title: {
 							text: 'Date',
 							margin: 10
@@ -144,4 +178,5 @@ Ext.define('Rally.example.BurnCalculator', {
 					}
 				};
 			}
-		});
+		}
+	);
