@@ -10,40 +10,14 @@ Ext.define('CustomApp', {
 	extend: 'Rally.app.App',
 	
 	launch: function() {
-		var types = Rally.data.ModelFactory.types;
-			
-		Rally.data.ModelFactory.getModel({
-			type: 'iteration',
-			context: this.getContext().getDataContext(),
-			success: this.onIterationModelLoaded,
-			scope: this
-		});
-	},
-	
-	onIterationModelLoaded: function( model ) {
-		var iteration_id = 47998626614;
-	
-		model.load( iteration_id, {
-			fetch: [ 'ObjectID', 'StartDate', 'EndDate' ],
-			callback: this.onIterationLoaded,
-			scope: this
-		});
-	},
-	
-	onIterationLoaded: function( record, operation ) {
-		if( operation.wasSuccessful() ) {
-		
-			console.log( "Iteration Model Loaded" );
-			ITERATION_ID = record.get( 'ObjectID' );
-			START_DATE = new Date( record.get( 'StartDate' ) );
-			END_DATE = new Date( record.get( 'EndDate' ) );
-			DATE_ITR = START_DATE;
-			
-			console.log( "Iteration ID: " + ITERATION_ID );
-			console.log( "Start Date: " + new Date( DATE_ITR ).toISOString() );
-			
-			this.loadWorkItemsForDate( DATE_ITR );
-		}
+		record = this.getContext().getTimeboxScope().record.raw;
+		ITERATION_ID = record.ObjectID;
+		START_DATE = new Date( record.StartDate );
+		END_DATE = new Date( record.EndDate );
+		DATE_ITR = START_DATE;
+		// Increment the date by 1 day as Team's often plan on the first day of the iteration
+		DATE_ITR.setDate( DATE_ITR.getDate() + 1 );
+		this.loadWorkItemsForDate( DATE_ITR );
 	},
 	
 	loadWorkItemsForDate: function( date ) {
@@ -65,8 +39,6 @@ Ext.define('CustomApp', {
 	},
 	
 	onWorkItemsLoaded: function( store, records ) {
-		console.log( "Work Items Loaded: " + records.length );
-		
 		// If we already have data for this date, skip it
 		for ( var i = 0; i < DATA.length; i ++ ) {
 			if ( DATA[i].date == DATE_ITR ) {
@@ -83,8 +55,6 @@ Ext.define('CustomApp', {
 		for ( var j = 0; j < records.length; j ++ ) {
 			var record_data = records[j].data;
 			
-			console.log ( record_data.ScheduleState + " - " + record_data.PlanEstimate );
-			
 			if ( !_.contains( UNCOMMITTED_SCHEDULE_STATES, record_data.ScheduleState ) ) {
 				total_scope = total_scope + record_data.PlanEstimate;
 				if ( _.contains( COMPLETED_SCHEDULE_STATES, record_data.ScheduleState ) ) {
@@ -95,13 +65,11 @@ Ext.define('CustomApp', {
 		
 		date_data.total_scope = total_scope;
 		date_data.completed_scope = completed_scope;
-		console.log( "Total = " + total_scope + " & Completed = " + completed_scope );
 		DATA.push( date_data );
 		
 		// Load the next date if we're not done
 		if ( DATE_ITR <= END_DATE ) {
 			DATE_ITR.setDate( DATE_ITR.getDate() + 1 );
-			console.log("New Date - " + DATE_ITR );
 			this.loadWorkItemsForDate( DATE_ITR );
 		} else {
 			this.createHighChartData();
@@ -125,24 +93,37 @@ Ext.define('CustomApp', {
         var dates = [];
         var totals = [];
         var remainings = [];
+        var ideals = [];
+        var initial_scope = DATA[0].total_scope;
+        var ideal_velocity = initial_scope / ( DATA.length - 1 );
         for ( var i = 0; i < DATA.length; i++ ) {
-			dates.push( DATA[i].date.toDateString() );
+			// set the label to the day before to show where the data was at the end of the day
+			var date = new Date( DATA[i].date.valueOf() );
+			date.setDate( date.getDate() - 1 );
+        
+			dates.push( date.toDateString() );
 			totals.push( DATA[i].total_scope );
 			remainings.push( DATA[i].total_scope - DATA[i].completed_scope );
+			ideals.push( initial_scope - ( i * ideal_velocity ) );
         }
         
         return {
             categories: dates,
             series: [
                 {
+                    name: 'Remaining Scope',
+                    data: remainings,
+                    type: 'column'
+				},
+				{
                     name: 'Total Scope',
                     data: totals,
                     type: 'line'
 				},
-                {
-                    name: 'Remaining Scope',
-                    data: remainings,
-                    type: 'column'
+				{
+                    name: 'Ideal Burndown',
+                    data: ideals,
+                    type: 'line'
 				}
 			]
         };
