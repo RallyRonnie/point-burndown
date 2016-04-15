@@ -98,14 +98,24 @@ Ext.define('CustomApp', {
      * Generate x axis categories and y axis series data for the chart
      */
     _getChartData: function() {
-        
+        var i;
+        var weekend_days = [0,6];
         var dates = [];
         var totals = [];
         var remainings = [];
         var ideals = [];
         var initial_scope = DATA[0].total_scope;
-        var ideal_velocity = initial_scope / ( DATA.length - 1 );
-        for ( var i = 0; i < DATA.length; i++ ) {
+        
+        // find the ideal velocity
+        var workdays = 0;
+        for ( i = 0; i < DATA.length; i++ ) {
+			if ( !_.contains( weekend_days, DATA[i].date.getDay() ) ) {
+				workdays = workdays + 1;
+			}
+        }
+        var ideal_velocity = initial_scope / workdays;
+        
+        for ( i = 0; i < DATA.length; i++ ) {
 			// set the label to the day before to show where the data was at the end of the day
 			var date = new Date( DATA[i].date.valueOf() );
 			date.setDate( date.getDate() - 1 );
@@ -113,8 +123,22 @@ Ext.define('CustomApp', {
 			dates.push( date.toDateString() );
 			totals.push( DATA[i].total_scope );
 			remainings.push( DATA[i].total_scope - DATA[i].completed_scope );
-			ideals.push( initial_scope - ( i * ideal_velocity ) );
+			
+			if ( i === 0 ) {
+				ideals.push( initial_scope );
+			} else if ( _.contains( weekend_days, date.getDay() ) ) {
+				ideals.push( ideals[ i - 1 ] );
+			} else {
+				// there may be rounding on the last point that puts it below 0, so check for negative values
+				var new_ideal_point = ideals[ i - 1 ] - ideal_velocity;
+				if ( new_ideal_point > 0 ) {
+					ideals.push( new_ideal_point );
+				} else {
+					ideals.push( 0 );
+				}
+			}
         }
+        
         
         return {
             categories: dates,
