@@ -7,14 +7,28 @@ var UNCOMMITTED_SCHEDULE_STATES = [ 'Idea' ];
 var COMPLETED_SCHEDULE_STATES = [ 'Released' ];
 
 Ext.define('CustomApp', {
-	extend: 'Rally.app.App',
+	extend: 'Rally.app.TimeboxScopedApp',
+	scopeType: 'iteration',
 	
 	launch: function() {
-		record = this.getContext().getTimeboxScope().record.raw;
+		this.initializeFromTimeboxScope( this.getContext().getTimeboxScope() );
+	},
+	
+	onTimeboxScopeChange: function(newTimeboxScope) {
+		this.callParent( arguments );
+		this.initializeFromTimeboxScope( newTimeboxScope );
+	},
+	
+	initializeFromTimeboxScope: function( timeboxScope ) {
+		this.removeAll();
+			
+		var record = timeboxScope.record.raw;
 		ITERATION_ID = record.ObjectID;
 		START_DATE = new Date( record.StartDate );
 		END_DATE = new Date( record.EndDate );
 		DATE_ITR = START_DATE;
+		DATA = [];
+		
 		// Increment the date by 1 day as Team's often plan on the first day of the iteration
 		DATE_ITR.setDate( DATE_ITR.getDate() + 1 );
 		this.loadWorkItemsForDate( DATE_ITR );
@@ -77,6 +91,8 @@ Ext.define('CustomApp', {
 	},
 	
 	createHighChartData: function() {
+		this.removeAll();
+		
 		var chart = this.add({
             xtype: 'rallychart',
             loadMask: true,
