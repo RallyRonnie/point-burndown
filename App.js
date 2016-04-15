@@ -110,10 +110,15 @@ Ext.define('CustomApp', {
 			// set the label to the day before to show where the data was at the end of the day
 			var date = new Date( DATA[i].date.valueOf() );
 			date.setDate( date.getDate() - 1 );
-        
 			dates.push( date.toDateString() );
-			totals.push( DATA[i].total_scope );
-			remainings.push( DATA[i].total_scope - DATA[i].completed_scope );
+			
+			if ( date < Date.now() ) {
+				totals.push( DATA[i].total_scope );
+				remainings.push( DATA[i].total_scope - DATA[i].completed_scope );
+			} else {
+				totals.push( null );
+				remainings.push( null );
+			}
 			
 			if ( i === 0 ) {
 				ideals.push( initial_scope );
