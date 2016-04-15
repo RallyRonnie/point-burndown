@@ -108,116 +108,106 @@ Ext.define('CustomApp', {
 		DATA.push( date_data );
 		
 		// Load the next date if we're not done
-		if ( DATE_ITR < END_DATE ) {
+		if ( DATE_ITR <= END_DATE ) {
 			DATE_ITR.setDate( DATE_ITR.getDate() + 1 );
 			console.log("New Date - " + DATE_ITR );
 			this.loadWorkItemsForDate( DATE_ITR );
+		} else {
+			this.createHighChartData();
 		}
-	}
-		
-	/*	requires: [
-			'Rally.example.BurnCalculator'
-		],
-			
-		launch: function() {
-			console.log ( "Paused" );
-			this.addChart();//.then({
-			//	success: this.addIdealBurndown,
-		//		scope: this
-			//});
-		},
-		
-		addChart: function() {
-			//create a deferred
- 		var deferred = Ext.create('Deft.Deferred');
-
- 		//perform an async operation
- 		var chart = this.add({
-				xtype: 'rallychart',
-				storeType: 'Rally.data.lookback.SnapshotStore',
-				storeConfig: this._getStoreConfig(),
-				calculatorType: 'Rally.example.BurnCalculator',
-				calculatorConfig: {
-					startDate: new Date( '2016-03-28' ),
-					endDate: new Date( '2016-04-08' )
+	},
+	
+	createHighChartData: function() {
+		this.add({
+            xtype: 'rallychart',
+            loadMask: false,
+            chartData: this._getChartData(),
+            chartConfig: this._getChartConfig()
+        });
+	},
+	
+	/**
+     * Generate x axis categories and y axis series data for the chart
+     */
+    _getChartData: function() {
+        
+        var dates = [];
+        var totals = [];
+        var remainings = [];
+        for ( var i = 0; i < DATA.length; i++ ) {
+			dates.push( DATA[i].date.toDateString() );
+			totals.push( DATA[i].total_scope );
+			remainings.push( DATA[i].total_scope - DATA[i].completed_scope );
+        }
+        
+        return {
+            categories: dates,
+            series: [
+                {
+                    name: 'Total Scope',
+                    data: totals,
+                    type: 'line'
 				},
-				chartConfig: this._getChartConfig(),
-				listeners: {
-					click: {
-						fn: this.addIdealBurndown()
+                {
+                    name: 'Remaining Scope',
+                    data: remainings,
+                    type: 'column'
+				}
+			]
+        };
+    },
+	
+	/**
+	 * Generate a valid Highcharts configuration object to specify the chart
+	 */
+	_getChartConfig: function() {
+		return {
+				chart: {
+					defaultSeriesType: 'area',
+					zoomType: 'xy'
+				},
+				title: {
+					text: 'Iteration Burndown'
+				},
+				xAxis: {
+					tickmarkPlacement: 'on',
+					tickInterval: 1,
+					title: {
+						text: 'Date',
+						margin: 10
+					}
+				},
+				yAxis: [
+					{
+						title: {
+							text: 'Points'
+						}
+					}
+				],
+				tooltip: {
+					formatter: function() {
+						return '' + this.x + '<br />' + this.series.name + ': ' + this.y;
+					}
+				},
+				plotOptions: {
+					series: {
+						marker: {
+							enabled: false,
+							states: {
+								hover: {
+									enabled: true
+								}
+							}
+						},
+						groupPadding: 0.01
+					},
+					column: {
+						stacking: null,
+						shadow: false
 					}
 				}
-			});
-			
-			deferred.resolve(chart);
-    		
-    		//return the promise
-			return deferred.promise;
-		}, */
-		
-		/**
-		 * Add the Ideal Burndow
-		 */
-	//	addIdealBurndown: function(chart) {
-	//		var highchart = Ext.ComponentQuery.query( 'rallychart' )[0];
-	//		highchart = highchart.highchart;
-	//		highchart.colors = [ '#FF0000', '#00FF00', '#0000FF' ];
-	//	},
-
-		/**
-		 * Generate a valid Highcharts configuration object to specify the chart
-		 */
-	/*	_getChartConfig: function() {
-			return {
-					chart: {
-						defaultSeriesType: 'area',
-						zoomType: 'xy'
-					},
-					title: {
-						text: 'Iteration Burndown'
-					},
-					xAxis: {
-						categories: [],
-						tickmarkPlacement: 'on',
-						tickInterval: 1,
-						title: {
-							text: 'Date',
-							margin: 10
-						}
-					},
-					yAxis: [
-						{
-							title: {
-								text: 'Points'
-							}
-						}
-					],
-					tooltip: {
-						formatter: function() {
-							return '' + this.x + '<br />' + this.series.name + ': ' + this.y;
-						}
-					},
-					plotOptions: {
-						series: {
-							marker: {
-								enabled: false,
-								states: {
-									hover: {
-										enabled: true
-									}
-								}
-							},
-							groupPadding: 0.01
-						},
-						column: {
-							stacking: null,
-							shadow: false
-						}
-					}
-				};
-		}
-	*/
-	//}
+		};
+	}
 });
 
             Rally.launchApp('CustomApp', {
