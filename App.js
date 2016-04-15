@@ -77,12 +77,14 @@ Ext.define('CustomApp', {
 	},
 	
 	createHighChartData: function() {
-		this.add({
+		var chart = this.add({
             xtype: 'rallychart',
-            loadMask: false,
+            loadMask: true,
             chartData: this._getChartData(),
             chartConfig: this._getChartConfig()
         });
+        // Workaround bug in setting colors - http://stackoverflow.com/questions/18361920/setting-colors-for-rally-chart-with-2-0rc1/18362186
+        chart.setChartColors( [ '#F6A900', '#B81B10', '#666' ] );
 	},
 	
 	/**
@@ -142,18 +144,21 @@ Ext.define('CustomApp', {
                 {
                     name: 'Remaining Scope',
                     data: remainings,
-                    type: 'column'
-				},
+                    type: 'column'				
+                },
 				{
                     name: 'Total Scope',
                     data: totals,
-                    type: 'line'
-				},
+                    type: 'line',
+                    lineWidth: 4	
+                },
 				{
                     name: 'Ideal Burndown',
                     data: ideals,
-                    type: 'line'
-				}
+                    type: 'line',
+                    dashStyle: 'longdash',
+                    lineWidth: 4
+                }
 			]
         };
     },
@@ -193,7 +198,7 @@ Ext.define('CustomApp', {
 				plotOptions: {
 					series: {
 						marker: {
-							enabled: false,
+							enabled: true,
 							states: {
 								hover: {
 									enabled: true
@@ -201,7 +206,7 @@ Ext.define('CustomApp', {
 							}
 						},
 						groupPadding: 0.01
-					},
+					}, 
 					column: {
 						stacking: null,
 						shadow: false
