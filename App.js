@@ -16,11 +16,12 @@ Ext.define('CustomApp', {
 	
 	onTimeboxScopeChange: function(newTimeboxScope) {
 		this.callParent( arguments );
-		this.removeAll();
 		this.initializeFromTimeboxScope( newTimeboxScope );
 	},
 	
 	initializeFromTimeboxScope: function( timeboxScope ) {
+		this.removeAll();
+			
 		var record = timeboxScope.record.raw;
 		ITERATION_ID = record.ObjectID;
 		START_DATE = new Date( record.StartDate );
@@ -90,6 +91,8 @@ Ext.define('CustomApp', {
 	},
 	
 	createHighChartData: function() {
+		this.removeAll();
+		
 		var chart = this.add({
             xtype: 'rallychart',
             loadMask: true,
