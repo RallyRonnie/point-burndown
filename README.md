@@ -14,7 +14,7 @@ This app can be configured to meet a Team's workflow by through the global varia
  
 The ideal line uses the iteration's initial scope and calculates a velocity needed to get to zero by the end of the iteration.
 
-The current day's value is calculated at run-time, which prior days are the status at the end of the day.
+The current day's value is calculated at run-time, while prior days are the status at the end of the day.
 
 ## Extensibility
 You can use this app as a base for your own app that uses the Lookback API to chart historic values in an iteration. Colors can be tweaked via CSS and line calculation via the config options described above.
