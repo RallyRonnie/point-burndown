@@ -1,10 +1,18 @@
+// Variables for configuration
+var WEEKEND_DAYS = [ 0, 6];
+var UNCOMMITTED_SCHEDULE_STATES = [ ];
+var COMPLETED_SCHEDULE_STATES = [ 'Accepted', 'Released' ];
+
+//Example config values for a different workflow
+// var UNCOMMITTED_SCHEDULE_STATES = [ 'Idea' ];
+// var COMPLETED_SCHEDULE_STATES = [ 'Released' ];
+
+// Variables used in calculations
 var ITERATION_ID = 0;
 var DATA = [];
 var DATE_ITR = null;
 var START_DATE = null;
 var END_DATE = null;
-var UNCOMMITTED_SCHEDULE_STATES = [ 'Idea' ];
-var COMPLETED_SCHEDULE_STATES = [ 'Released' ];
 
 Ext.define('CustomApp', {
 	extend: 'Rally.app.TimeboxScopedApp',
@@ -108,7 +116,6 @@ Ext.define('CustomApp', {
      */
     _getChartData: function() {
         var i;
-        var weekend_days = [0,6];
         var dates = [];
         var totals = [];
         var remainings = [];
@@ -118,7 +125,7 @@ Ext.define('CustomApp', {
         // find the ideal velocity
         var workdays = 0;
         for ( i = 0; i < DATA.length; i++ ) {
-			if ( !_.contains( weekend_days, DATA[i].date.getDay() ) ) {
+			if ( !_.contains( WEEKEND_DAYS, DATA[i].date.getDay() ) ) {
 				workdays = workdays + 1;
 			}
         }
@@ -140,7 +147,7 @@ Ext.define('CustomApp', {
 			
 			if ( i === 0 ) {
 				ideals.push( initial_scope );
-			} else if ( _.contains( weekend_days, date.getDay() ) ) {
+			} else if ( _.contains( WEEKEND_DAYS, date.getDay() ) ) {
 				ideals.push( ideals[ i - 1 ] );
 			} else {
 				// there may be rounding on the last point that puts it below 0, so check for negative values
