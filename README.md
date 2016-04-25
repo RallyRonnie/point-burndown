@@ -10,8 +10,9 @@ This app was created during the 2016.Q1 CA Hackathon. Its goal is to give Team's
 This app can be configured to meet a Team's workflow by through the global variables:
  * UNCOMMITTED_SCHEDULE_STATES - states, like Idea, not count in an iteration commitment
  * COMPLETED_SCHEDULE_STATES - states that should be counted as done, such as just Released
+ * WEEKEND_DAYS - the days of the week that should be counted as weekends. On weekends, the ideal line is flat to show the Team should not be working on the weekend.
  
-The ideal line uses the iteration's initial scope and calculates a velocity needed to get to zero by the end of the iteration. The line goes flat on Saturday and Sunday to show the Team is now expected to work on weekends.
+The ideal line uses the iteration's initial scope and calculates a velocity needed to get to zero by the end of the iteration.
 
 The current day's value is calculated at run-time, which prior days are the status at the end of the day.
 
