@@ -29,6 +29,8 @@ Ext.define('CustomApp', {
 	
 	initializeFromTimeboxScope: function( timeboxScope ) {
 		this.removeAll();
+		this._myMask = new Ext.LoadMask( Ext.getBody(), { msg:"Calculating...Please wait." } );
+        this._myMask.show();
 			
 		var record = timeboxScope.record.raw;
 		ITERATION_ID = record.ObjectID;
@@ -99,6 +101,7 @@ Ext.define('CustomApp', {
 	},
 	
 	createHighChartData: function() {
+		this._myMask.hide();
 		this.removeAll();
 		
 		var chart = this.add({
